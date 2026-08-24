@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Эко-Сортировка и Влажность | ИИ Помощник</title>
-    <!-- Подключаем TensorFlow.js для работы ИИ -->
     <script src="https://jsdelivr.net"></script>
     <script src="https://jsdelivr.net"></script>
     
@@ -31,7 +30,6 @@
             min-height: 100vh;
         }
 
-        /* Общий задний фон с природой для всего сайта */
         .bg-nature {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -42,7 +40,6 @@
             z-index: -1;
         }
 
-        /* СТРАНИЦА 1: Экран приветствия */
         #welcome-screen {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -50,11 +47,10 @@
             justify-content: center;
             align-items: center;
             z-index: 100;
-            transition: opacity 0.8s ease, visibility 0.8s;
+            transition: opacity 0.5s ease, visibility 0.5s;
             padding: 20px;
         }
 
-        /* Неоновая светящаяся карточка */
         .welcome-card {
             background: rgba(12, 30, 15, 0.85);
             backdrop-filter: blur(10px);
@@ -66,7 +62,7 @@
             width: 100%;
             text-align: center;
             color: #ffffff;
-            box-shadow: 0 0 30px var(--glow), inset 0 0 15px rgba(76, 175, 80, 0.2);
+            box-shadow: 0 0 30px var(--glow);
             animation: pulse-glow 3s infinite alternate;
         }
 
@@ -82,18 +78,19 @@
         .btn-main {
             background: linear-gradient(135deg, #2e7d32, #4caf50);
             color: white; border: none;
-            padding: 15px 35px; font-size: 1.1rem; font-weight: bold;
-            border-radius: 50px; cursor: pointer; margin-top: 15px;
+            padding: 16px 40px; font-size: 1.2rem; font-weight: bold;
+            border-radius: 50px; cursor: pointer; margin-top: 20px;
             box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
             transition: all 0.3s;
+            display: inline-block;
+            width: auto;
         }
         .btn-main:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6); }
 
-        /* СТРАНИЦА 2: Основной сайт (скрыт изначально) */
         #main-site {
             display: none;
             opacity: 0;
-            transition: opacity 0.8s ease;
+            transition: opacity 0.5s ease;
             padding-bottom: 60px;
         }
 
@@ -108,7 +105,6 @@
 
         .container { max-width: 600px; margin: 20px auto; padding: 0 15px; }
         
-        /* Прозрачные стильные карточки с подсветкой границ */
         .card { 
             background: rgba(255, 255, 255, 0.95); 
             border-radius: 16px; padding: 20px; margin-bottom: 20px; 
@@ -147,10 +143,9 @@
 </head>
 <body>
 
-    <!-- Живой фон природы (деревья и растения) -->
     <div class="bg-nature"></div>
 
-    <!-- СТРАНИЦА 1: Приветствие, информация про влажность и эко-карточка -->
+    <!-- СТРАНИЦА 1 -->
     <div id="welcome-screen">
         <div class="welcome-card">
             <h1>🌿 Планета Деревьев</h1>
@@ -165,7 +160,7 @@
         </div>
     </div>
 
-    <!-- СТРАНИЦА 2: Основной рабочий сайт с ИИ -->
+    <!-- СТРАНИЦА 2 -->
     <div id="main-site">
         <header>
             <h1>🌿 Эко-Сканер Мусора</h1>
@@ -173,7 +168,6 @@
         </header>
 
         <div class="container">
-            <!-- Блок сканера -->
             <div class="card">
                 <h2>📷 Анализ через камеру</h2>
                 <div id="loading-status">Нажмите синюю кнопку для запуска сканера...</div>
@@ -192,7 +186,6 @@
                 <div id="result-box"></div>
             </div>
 
-            <!-- Справочник 6 категорий -->
             <div class="card">
                 <h2>♻️ 6 категорий переработки</h2>
                 <div class="grid">
@@ -203,3 +196,18 @@
                     <div class="type-card type-metal">🥫 Металл<br><small>Жестяные банки</small></div>
                     <div class="type-card type-other">🍎 Другое<br><small>Органика (Влажное)</small></div>
                 </div>
+            </div>
+
+            <div class="card">
+                <h2>📊 Ваши фотоотчеты за сегодня</h2>
+                <div id="reports-list">
+                    <p style="color: #9e9e9e;">Вы еще не отправили ни одного отчета.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const enterBtn = document.getElementById('enter-btn');
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const mainSite = document.getElementById('main-site');
