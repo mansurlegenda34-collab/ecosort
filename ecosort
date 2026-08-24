@@ -2,583 +2,280 @@ index.html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ИИ Сортировка Мусора | Эко-Помощник</title>
+    <!-- Подключаем ИИ библиотеку TensorFlow.js и модель MobileNet -->
+    <script src="https://jsdelivr.net"></script>
+    <script src="https://jsdelivr.net"></script>
+    
+    <style>
+        :root {
+            --primary: #2e7d32;
+            --primary-light: #e8f5e9;
+            --text: #2c3e50;
+            --plastic: #2196f3;
+            --paper: #ff9800;
+            --glass: #4caf50;
+            --danger: #f44336;
+            --metal: #9e9e9e;
+            --other: #795548;
+        }
 
-<title>EcoSort AI</title>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
 
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.5/dist/teachablemachine-image.min.js"></script>
+        body {
+            background-color: #f4f7f6;
+            color: var(--text);
+            padding-bottom: 60px;
+        }
 
-<style>
-* {
-    box-sizing: border-box;
-}
+        header {
+            background: linear-gradient(135deg, #1b5e20, #2e7d32);
+            color: white;
+            text-align: center;
+            padding: 2rem 1rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
 
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    color: white;
-    min-height: 100vh;
-    background:
-        radial-gradient(circle at 20% 20%, #35d07f55, transparent 30%),
-        radial-gradient(circle at 80% 80%, #168f5a55, transparent 30%),
-        linear-gradient(135deg, #061b12, #0b4028, #061b12);
-}
+        header h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+        header p { font-size: 1rem; opacity: 0.9; }
 
-.container {
-    width: 92%;
-    max-width: 1000px;
-    margin: auto;
-    padding: 30px 0 60px;
-}
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 0 15px;
+        }
 
-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            text-align: center;
+        }
 
-.logo {
-    font-size: 28px;
-    font-weight: bold;
-}
+        .card h2 { font-size: 1.3rem; margin-bottom: 15px; color: var(--primary); }
 
-.logo span {
-    color: #72e6a0;
-}
+        /* Стили для Камеры и Снимка */
+        #camera-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            height: 300px;
+            margin: 0 auto 15px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #000;
+        }
 
-.badge {
-    background: #ffffff20;
-    padding: 10px 16px;
-    border-radius: 30px;
-}
+        video, canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
 
-.hero {
-    text-align: center;
-    padding: 60px 10px 35px;
-}
+        #captured-image {
+            display: none;
+            width: 100%;
+            max-width: 400px;
+            height: 300px;
+            object-fit: cover;
+            margin: 0 auto 15px;
+            border-radius: 12px;
+            border: 3px solid var(--primary);
+        }
 
-.hero h1 {
-    font-size: 52px;
-    margin: 15px 0;
-}
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn:disabled { background: #b0bec5; cursor: not-allowed; }
+        .btn-reset { background: #546e7a; margin-top: 10px; display: none; }
 
-.hero h1 span {
-    color: #72e6a0;
-}
+        /* Информационные плашки ИИ */
+        #loading-status { color: #78909c; font-style: italic; margin-bottom: 10px; }
+        #result-box {
+            display: none;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
 
-.hero p {
-    color: #c9ddd1;
-    font-size: 18px;
-}
+        /* Наша сетка из 6 категорий отходов */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 15px;
+        }
 
-.card {
-    background: rgba(255,255,255,0.96);
-    color: #173126;
-    border-radius: 28px;
-    padding: 30px;
-    margin-top: 25px;
-    box-shadow: 0 20px 60px #0006;
-}
+        .type-card {
+            padding: 15px 10px;
+            border-radius: 12px;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .type-plastic { background-color: var(--plastic); }
+        .type-paper { background-color: var(--paper); }
+        .type-glass { background-color: var(--glass); }
+        .type-danger { background-color: var(--danger); }
+        .type-metal { background-color: var(--metal); }
+        .type-other { background-color: var(--other); }
 
-.camera {
-    min-height: 320px;
-    background: #edf5ef;
-    border-radius: 20px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-}
-
-button {
-    border: none;
-    border-radius: 15px;
-    padding: 16px 25px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.start {
-    margin-top: 20px;
-    background: #208d59;
-    color: white;
-}
-
-.start:hover {
-    background: #176f45;
-}
-
-#status {
-    text-align: center;
-    margin-top: 18px;
-    font-weight: bold;
-}
-
-.prediction {
-    margin-top: 18px;
-}
-
-.prediction-title {
-    display: flex;
-    justify-content: space-between;
-    font-weight: bold;
-}
-
-.bar {
-    height: 12px;
-    margin-top: 7px;
-    background: #e2e9e4;
-    border-radius: 20px;
-    overflow: hidden;
-}
-
-.fill {
-    height: 100%;
-    background: linear-gradient(90deg, #208d59, #72e6a0);
-    transition: width 0.4s;
-}
-
-.result {
-    text-align: center;
-    margin-top: 25px;
-    padding: 25px;
-    border-radius: 20px;
-    background: #e9f7ee;
-}
-
-.result .emoji {
-    font-size: 50px;
-}
-
-.categories {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 15px;
-}
-
-.category {
-    padding: 20px;
-    border-radius: 18px;
-}
-
-.category b {
-    display: block;
-    margin-top: 8px;
-}
-
-.plastic { background: #e1efff; }
-.paper { background: #fff0c9; }
-.glass { background: #e1f5e8; }
-.danger { background: #ffe1e1; }
-.metal { background: #e6e7e8; }
-.other { background: #eeeeee; }
-
-.info {
-    display: grid;
-    grid-template-columns: repeat(3,1fr);
-    gap: 15px;
-}
-
-.info-box {
-    text-align: center;
-    background: #f0f5f1;
-    padding: 20px;
-    border-radius: 18px;
-}
-
-.info-box strong {
-    display: block;
-    color: #208d59;
-    font-size: 28px;
-}
-
-footer {
-    text-align: center;
-    color: #9bb5a7;
-    margin-top: 40px;
-}
-
-@media(max-width:700px) {
-    .hero h1 {
-        font-size: 38px;
-    }
-
-    .categories,
-    .info {
-        grid-template-columns: 1fr 1fr;
-    }
-}
-</style>
+        /* Блок фотоотчетов */
+        .report-item {
+            background: var(--primary-light);
+            border-left: 5px solid var(--primary);
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .report-thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; }
+        .report-info { flex-grow: 1; }
+        .report-date { font-size: 0.8rem; color: #757575; }
+    </style>
 </head>
-
 <body>
 
-<div class="container">
-
-<header>
-    <div class="logo">♻️ Eco<span>Sort</span></div>
-    <div class="badge">🤖 AI</div>
-</header>
-
-<section class="hero">
-    <div>SMART ECO ASSISTANT</div>
-
-    <h1>
-        Сортируй.<br>
-        <span>Меняй будущее.</span>
-    </h1>
-
-    <p>
-        Покажи мусор камере — EcoSort попробует определить его категорию.
-    </p>
-</section>
-
-<div class="card">
-
-    <h2>📷 AI-проверка</h2>
-
-    <p>
-        Нажми кнопку и разреши доступ к камере.
-    </p>
-
-    <div class="camera">
-        <div id="webcam"></div>
-    </div>
-
-    <div style="text-align:center;">
-        <button class="start" onclick="startAI()">
-            🚀 Запустить EcoSort AI
-        </button>
-    </div>
-
-    <div id="status">
-        Нажми кнопку, чтобы начать.
-    </div>
-
-    <div id="predictions"></div>
-
-    <div id="result"></div>
-
-</div>
-
-<div class="card">
-
-<h2>♻️ Категории</h2>
-
-<div class="categories">
-
-<div class="category plastic">
-🧴
-<b>Пластик</b>
-Бутылки и упаковка
-</div>
-
-<div class="category paper">
-📄
-<b>Бумага</b>
-Картон и бумага
-</div>
-
-<div class="category glass">
-🍾
-<b>Стекло</b>
-Бутылки и банки
-</div>
-
-<div class="category danger">
-☢️
-<b>Опасные</b>
-Опасные отходы
-</div>
-
-<div class="category metal">
-🥫
-<b>Металл</b>
-Металлические отходы
-</div>
-
-<div class="category other">
-❓
-<b>Другое</b>
-Другие отходы
-</div>
-
-</div>
-
-</div>
-
-<div class="card">
-
-<h2>🌱 Моя статистика</h2>
-
-<div class="info">
-
-<div class="info-box">
-<strong id="reports">0</strong>
-Фотоотчётов
-</div>
-
-<div class="info-box">
-<strong id="points">0</strong>
-Eco-баллов
-</div>
-
-<div class="info-box">
-<strong>3</strong>
-Дня между проверками
-</div>
-
-</div>
-
-</div>
-
-<footer>
-EcoSort MVP • Сделано для экологичного будущего 🌍
-</footer>
-
-</div>
-
-<script>
-
-const MODEL_URL =
-"https://teachablemachine.withgoogle.com/models/G7dMpMWEi/";
-
-let model;
-let webcam;
-let maxPredictions;
-let running = false;
-
-async function startAI() {
-
-    if (running) return;
-
-    running = true;
-
-    const status =
-        document.getElementById("status");
-
-    status.innerHTML =
-        "⏳ Загружаю твою AI-модель...";
-
-    try {
-
-        const modelURL =
-            MODEL_URL + "model.json";
-
-        const metadataURL =
-            MODEL_URL + "metadata.json";
-
-        model = await tmImage.load(
-            modelURL,
-            metadataURL
-        );
-
-        maxPredictions =
-            model.getTotalClasses();
-
-        webcam =
-            new tmImage.Webcam(
-                400,
-                400,
-                true
-            );
-
-        await webcam.setup();
-
-        await webcam.play();
-
-        document
-            .getElementById("webcam")
-            .appendChild(webcam.canvas);
-
-        status.innerHTML =
-            "🟢 AI работает! Покажи мусор камере.";
-
-        createPredictionBoxes();
-
-        window.requestAnimationFrame(loop);
-
-    } catch(error) {
-
-        console.error(error);
-
-        status.innerHTML =
-            "❌ AI не загрузился. Открой консоль браузера для подробной ошибки.";
-
-        running = false;
-    }
-}
-
-function createPredictionBoxes() {
-
-    const container =
-        document.getElementById("predictions");
-
-    container.innerHTML = "";
-
-    for(let i = 0; i < maxPredictions; i++) {
-
-        const box =
-            document.createElement("div");
-
-        box.className = "prediction";
-
-        box.innerHTML = `
-            <div class="prediction-title">
-                <span id="name-${i}"></span>
-                <span id="percent-${i}">0%</span>
+    <header>
+        <h1>🌿 Эко-Сканер Мусора</h1>
+        <p>Сделайте фотоотчет, а ИИ подскажет категорию бака</p>
+    </header>
+
+    <div class="container">
+        
+        <!-- Карточка сканирования -->
+        <div class="card">
+            <h2>📷 Анализ через камеру</h2>
+            <div id="loading-status">Загрузка искусственного интеллекта...</div>
+            
+            <div id="camera-container">
+                <video id="webcam" autoplay playsinline muted></video>
             </div>
+            
+            <img id="captured-image" alt="Снимок">
+            <canvas id="canvas" style="display:none;"></canvas>
 
-            <div class="bar">
-                <div
-                    class="fill"
-                    id="bar-${i}"
-                    style="width:0%">
-                </div>
+            <button id="scan-btn" class="btn" disabled>🤖 Распознать объект</button>
+            <button id="reset-btn" class="btn btn-reset">Сбросить / Новый снимок</button>
+
+            <div id="result-box"></div>
+        </div>
+
+        <!-- Справочник 6 типов мусора -->
+        <div class="card">
+            <h2>♻️ 6 поддерживаемых категорий</h2>
+            <div class="grid">
+                <div class="type-card type-plastic">💧 Пластик<br><small>Бутылки, контейнеры</small></div>
+                <div class="type-card type-paper">📦 Бумага<br><small>Картон, газеты</small></div>
+                <div class="type-card type-glass">🍾 Стекло<br><small>Банки, бутылки</small></div>
+                <div class="type-card type-danger">🔋 Опасные отходы<br><small>Батарейки, лампы</small></div>
+                <div class="type-card type-metal">🥫 Металл<br><small>Жестяные банки</small></div>
+                <div class="type-card type-other">🍎 Другое<br><small>Органика, текстиль</small></div>
             </div>
-        `;
+        </div>
 
-        container.appendChild(box);
-    }
-}
+        <!-- История фотоотчетов -->
+        <div class="card">
+            <h2>📊 Ваши фотоотчеты за сегодня</h2>
+            <div id="reports-list">
+                <p style="color: #9e9e9e;">Вы еще не отправили ни одного отчета.</p>
+            </div>
+        </div>
 
-async function loop() {
+    </div>
 
-    webcam.update();
+    <script>
+        const video = document.getElementById('webcam');
+        const canvas = document.getElementById('canvas');
+        const scanBtn = document.getElementById('scan-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const capturedImage = document.getElementById('captured-image');
+        const cameraContainer = document.getElementById('camera-container');
+        const loadingStatus = document.getElementById('loading-status');
+        const resultBox = document.getElementById('result-box');
+        const reportsList = document.getElementById('reports-list');
 
-    await predict();
+        let model = undefined;
+        let stream = undefined;
 
-    window.requestAnimationFrame(loop);
-}
+        // Эко-логика: сопоставление общих английских слов распознавания с 6 эко-категориями
+        const ecoRules = {
+            plastic: ['bottle', 'plastic', 'cup', 'container', 'wrapper'],
+            paper: ['paper', 'cardboard', 'box', 'envelope', 'magazine', 'book'],
+            glass: ['glass', 'bottle', 'jar', 'wine', 'beer'],
+            danger: ['battery', 'accumulator', 'bulb', 'lamp', 'thermometer', 'chemical'],
+            metal: ['can', 'tin', 'metal', 'aluminum', 'foil', 'iron'],
+        };
 
-async function predict() {
-
-    const predictions =
-        await model.predict(webcam.canvas);
-
-    let best = predictions[0];
-
-    for(const prediction of predictions) {
-
-        if(
-            prediction.probability >
-            best.probability
-        ) {
-            best = prediction;
+        // Запуск ИИ и Камеры при загрузке страницы
+        async function init() {
+            try {
+                // Загружаем предобученную нейросеть MobileNet
+                model = await mobilenet.load();
+                loadingStatus.innerText = "ИИ готов! Разрешите доступ к камере.";
+                
+                // Включаем веб-камеру
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' }, // Задняя камера на телефонах
+                    audio: false
+                });
+                video.srcObject = stream;
+                
+                loadingStatus.style.display = 'none';
+                scanBtn.disabled = false;
+            } catch (err) {
+                loadingStatus.innerText = "Ошибка: Не удалось включить ИИ или камеру.";
+                console.error(err);
+            }
         }
-    }
 
-    predictions.forEach((prediction,index) => {
+        // Кнопка распознавания (снимок + ИИ анализ)
+        scanBtn.addEventListener('click', async () => {
+            // 1. Делаем стоп-кадр на canvas
+            const ctx = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // 2. Показываем картинку вместо живого видео
+            const dataUrl = canvas.toDataURL('image/jpeg');
+            capturedImage.src = dataUrl;
+            cameraContainer.style.display = 'none';
+            capturedImage.style.display = 'block';
+            
+            scanBtn.style.display = 'none';
+            resetBtn.style.display = 'inline-block';
 
-        const percent =
-            Math.round(
-                prediction.probability * 100
-            );
+            // 3. Запускаем анализ ИИ
+            resultBox.style.display = 'block';
+            resultBox.style.backgroundColor = '#e0f7fa';
+            resultBox.innerText = "Нейросеть думает...";
 
-        document.getElementById(
-            "name-" + index
-        ).innerHTML =
-            getEmoji(prediction.className)
-            + " "
-            + prediction.className;
-
-        document.getElementById(
-            "percent-" + index
-        ).innerHTML =
-            percent + "%";
-
-        document.getElementById(
-            "bar-" + index
-        ).style.width =
-            percent + "%";
-
-    });
-
-    showResult(best);
-}
-
-function showResult(best) {
-
-    const percent =
-        Math.round(
-            best.probability * 100
-        );
-
-    const result =
-        document.getElementById("result");
-
-    if(percent >= 70) {
-
-        result.innerHTML = `
-            <div class="result">
-                <div class="emoji">
-                    ${getEmoji(best.className)}
-                </div>
-
-                <h2>
-                    ${best.className}
-                </h2>
-
-                <p>
-                    AI уверенно определил категорию
-                </p>
-
-                <h2>
-                    ${percent}%
-                </h2>
-
-                <p>
-                    🌱 Спасибо за правильную сортировку!
-                </p>
-            </div>
-        `;
-
-    } else {
-
-        result.innerHTML = `
-            <div class="result">
-                <div class="emoji">🤔</div>
-
-                <h2>
-                    Не уверен
-                </h2>
-
-                <p>
-                    Попробуй показать объект ближе
-                    и при хорошем освещении.
-                </p>
-            </div>
-        `;
-    }
-}
-
-function getEmoji(name) {
-
-    const text =
-        name.toLowerCase();
-
-    if(text.includes("пласт"))
-        return "🧴";
-
-    if(text.includes("бумаг"))
-        return "📄";
-
-    if(text.includes("стек"))
-        return "🍾";
-
-    if(text.includes("опас"))
-        return "☢️";
-
-    if(text.includes("металл"))
-        return "🥫";
-
-    return "❓";
-}
-
-</script>
-
-</body>
-</html>
+            const predictions = await model.classify(canvas);
