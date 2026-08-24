@@ -1,0 +1,732 @@
+index.html
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>EcoSort — AI сортировка мусора</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+<style>
+
+*{
+    box-sizing:border-box;
+}
+
+body{
+    margin:0;
+    font-family:Arial, sans-serif;
+    color:white;
+    min-height:100vh;
+
+    background:
+        radial-gradient(circle at 10% 10%, #39a96b55, transparent 30%),
+        radial-gradient(circle at 90% 80%, #1c8c5a55, transparent 30%),
+        linear-gradient(135deg,#061b12,#0b3b25,#061b12);
+
+}
+
+.container{
+    width:min(1000px,92%);
+    margin:auto;
+    padding:30px 0 60px;
+}
+
+header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.logo{
+    font-size:25px;
+    font-weight:bold;
+}
+
+.logo span{
+    color:#72e6a0;
+}
+
+.badge{
+    background:#ffffff18;
+    padding:10px 16px;
+    border-radius:30px;
+    font-size:13px;
+}
+
+.hero{
+    text-align:center;
+    padding:60px 10px 35px;
+}
+
+.hero h1{
+    font-size:52px;
+    margin:10px 0;
+}
+
+.hero h1 span{
+    color:#72e6a0;
+}
+
+.hero p{
+    color:#c5d9cd;
+    font-size:18px;
+}
+
+.card{
+    background:#ffffffee;
+    color:#183126;
+    border-radius:30px;
+    padding:30px;
+    margin-top:25px;
+    box-shadow:0 20px 60px #0005;
+}
+
+.camera-area{
+    text-align:center;
+}
+
+.camera{
+    min-height:300px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:#edf5ef;
+    border-radius:22px;
+    overflow:hidden;
+}
+
+#webcam-container canvas{
+    max-width:100%;
+    border-radius:20px;
+}
+
+button{
+    border:0;
+    padding:15px 25px;
+    border-radius:15px;
+    font-weight:bold;
+    cursor:pointer;
+    font-size:16px;
+}
+
+.start{
+    background:#208d59;
+    color:white;
+    margin-top:20px;
+}
+
+.start:hover{
+    background:#176f45;
+}
+
+#label-container{
+    margin-top:25px;
+}
+
+.prediction{
+    margin:12px 0;
+}
+
+.prediction-top{
+    display:flex;
+    justify-content:space-between;
+    font-weight:bold;
+}
+
+.bar{
+    height:12px;
+    background:#e4ebe6;
+    border-radius:20px;
+    overflow:hidden;
+    margin-top:6px;
+}
+
+.bar-fill{
+    height:100%;
+    background:linear-gradient(90deg,#208d59,#6be39a);
+    width:0%;
+    transition:.4s;
+}
+
+.main-result{
+    text-align:center;
+    padding:25px;
+    background:#e9f7ee;
+    border-radius:22px;
+    margin-top:25px;
+}
+
+.main-result .emoji{
+    font-size:55px;
+}
+
+.main-result h2{
+    margin:10px 0;
+}
+
+.info{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:15px;
+    margin-top:25px;
+}
+
+.info-box{
+    background:#f0f5f1;
+    padding:20px;
+    border-radius:18px;
+    text-align:center;
+}
+
+.info-box strong{
+    display:block;
+    font-size:26px;
+    color:#208d59;
+}
+
+.categories{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:15px;
+    margin-top:20px;
+}
+
+.category{
+    padding:20px;
+    border-radius:20px;
+    color:#183126;
+}
+
+.category b{
+    display:block;
+    margin-top:8px;
+}
+
+.plastic{background:#e2f0ff;}
+.paper{background:#fff0c9;}
+.glass{background:#e2f4e8;}
+.danger{background:#ffe1e1;}
+.other{background:#eeeeee;}
+.metal{background:#e5e7e8;}
+
+footer{
+    text-align:center;
+    color:#91ac9d;
+    margin-top:40px;
+}
+
+@media(max-width:700px){
+
+    .hero h1{
+        font-size:38px;
+    }
+
+    .categories,
+    .info{
+        grid-template-columns:1fr 1fr;
+    }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<header>
+
+<div class="logo">
+♻️ Eco<span>Sort</span>
+</div>
+
+<div class="badge">
+🤖 AI работает
+</div>
+
+</header>
+
+
+<section class="hero">
+
+<div style="font-size:13px;color:#8de5ac;letter-spacing:3px;">
+SMART ECO ASSISTANT
+</div>
+
+<h1>
+Сортируй.<br>
+<span>Меняй будущее.</span>
+</h1>
+
+<p>
+Покажи мусор камере — EcoSort с помощью AI определит его категорию.
+</p>
+
+</section>
+
+
+<div class="card camera-area">
+
+<h2>📷 AI-проверка</h2>
+
+<p>
+Нажми кнопку и покажи мусор камере.
+</p>
+
+<div class="camera">
+
+<div id="webcam-container">
+</div>
+
+</div>
+
+<button class="start" onclick="init()">
+🚀 Запустить EcoSort AI
+</button>
+
+<div id="loading"></div>
+
+<div id="label-container"></div>
+
+<div id="main-result"></div>
+
+</div>
+
+
+<div class="card">
+
+<h2>♻️ Категории EcoSort</h2>
+
+<div class="categories">
+
+<div class="category plastic">
+🧴
+<b>Пластик</b>
+<span>Бутылки, упаковка</span>
+</div>
+
+<div class="category paper">
+📄
+<b>Бумага</b>
+<span>Картон, бумага</span>
+</div>
+
+<div class="category glass">
+🍾
+<b>Стекло</b>
+<span>Бутылки, банки</span>
+</div>
+
+<div class="category danger">
+☢️
+<b>Опасные</b>
+<span>Опасные отходы</span>
+</div>
+
+<div class="category metal">
+🥫
+<b>Металл</b>
+<span>Металлические отходы</span>
+</div>
+
+<div class="category other">
+❓
+<b>Другое</b>
+<span>Другие отходы</span>
+</div>
+
+</div>
+
+</div>
+
+
+<div class="card">
+
+<h2>🌱 EcoSort сегодня</h2>
+
+<div class="info">
+
+<div class="info-box">
+<strong id="reports">0</strong>
+Фотоотчётов
+</div>
+
+<div class="info-box">
+<strong id="points">0</strong>
+Eco-баллов
+</div>
+
+<div class="info-box">
+<strong>3</strong>
+Дня
+</div>
+
+</div>
+
+</div>
+
+
+<footer>
+EcoSort MVP • AI Waste Sorting 🌱
+</footer>
+
+</div>
+
+
+<script>
+
+/*
+==================================================
+ВАЖНО!
+ЭТО АДРЕС ТВОЕЙ МОДЕЛИ TEACHABLE MACHINE
+==================================================
+*/
+
+const URL =
+"https://teachablemachine.withgoogle.com/models/G7dMpMWEi/";
+
+
+let model;
+let webcam;
+
+let labelContainer;
+let maxPredictions;
+
+let running=false;
+
+
+/*
+Запуск AI
+*/
+
+async function init(){
+
+if(running){
+return;
+}
+
+running=true;
+
+document.getElementById("loading").innerHTML =
+"🤖 Загружаю AI-модель...";
+
+try{
+
+const modelURL =
+URL + "model.json";
+
+const metadataURL =
+URL + "metadata.json";
+
+
+model =
+await tmImage.load(
+modelURL,
+metadataURL
+);
+
+maxPredictions =
+model.getTotalClasses();
+
+
+/*
+Создаём камеру
+*/
+
+const flip=true;
+
+webcam =
+new tmImage.Webcam(
+400,
+400,
+flip
+);
+
+await webcam.setup();
+
+await webcam.play();
+
+
+window.requestAnimationFrame(loop);
+
+
+document
+.getElementById("webcam-container")
+.appendChild(webcam.canvas);
+
+
+labelContainer =
+document.getElementById("label-container");
+
+labelContainer.innerHTML="";
+
+
+for(
+let i=0;
+i<maxPredictions;
+i++
+){
+
+const div =
+document.createElement("div");
+
+div.className="prediction";
+
+labelContainer.appendChild(div);
+
+}
+
+
+document.getElementById("loading").innerHTML =
+"🟢 AI готов. Покажи мусор камере!";
+
+
+}catch(error){
+
+console.error(error);
+
+document.getElementById("loading").innerHTML =
+"❌ Не удалось загрузить модель. Проверь интернет-соединение.";
+
+running=false;
+
+}
+
+}
+
+
+/*
+Главный цикл
+*/
+
+async function loop(){
+
+webcam.update();
+
+await predict();
+
+window.requestAnimationFrame(loop);
+
+}
+
+
+/*
+AI анализирует изображение
+*/
+
+async function predict(){
+
+const prediction =
+await model.predict(webcam.canvas);
+
+
+let bestIndex=0;
+
+for(
+let i=0;
+i<maxPredictions;
+i++
+){
+
+if(
+prediction[i].probability >
+prediction[bestIndex].probability
+){
+
+bestIndex=i;
+
+}
+
+}
+
+
+/*
+Показываем все категории
+*/
+
+for(
+let i=0;
+i<maxPredictions;
+i++
+){
+
+const name =
+prediction[i].className;
+
+const probability =
+prediction[i].probability;
+
+const percent =
+Math.round(
+probability*100
+);
+
+
+labelContainer.children[i].innerHTML=`
+
+<div class="prediction-top">
+
+<span>
+${getEmoji(name)} ${name}
+</span>
+
+<span>
+${percent}%
+</span>
+
+</div>
+
+<div class="bar">
+
+<div
+class="bar-fill"
+style="width:${percent}%">
+</div>
+
+</div>
+
+`;
+
+}
+
+
+/*
+Лучший результат
+*/
+
+const best =
+prediction[bestIndex];
+
+const bestPercent =
+Math.round(
+best.probability*100
+);
+
+const result =
+document.getElementById(
+"main-result"
+);
+
+
+if(bestPercent>=70){
+
+result.innerHTML=`
+
+<div class="emoji">
+${getEmoji(best.className)}
+</div>
+
+<h2>
+${bestPercent>=85 ? "✅ Отличное распознавание!" : "🔎 Объект обнаружен"}
+</h2>
+
+<p>
+
+AI считает, что это:
+
+<strong>
+${best.className}
+</strong>
+
+</p>
+
+<h2>
+${bestPercent}%
+</h2>
+
+`;
+
+}else{
+
+result.innerHTML=`
+
+<div class="emoji">
+🤔
+</div>
+
+<h2>
+Нужна более чёткая фотография
+</h2>
+
+<p>
+Покажи объект ближе и при хорошем освещении.
+</p>
+
+`;
+
+}
+
+}
+
+
+/*
+Эмодзи категорий
+*/
+
+function getEmoji(name){
+
+const n =
+name.toLowerCase();
+
+
+if(n.includes("пласт")){
+return "🧴";
+}
+
+if(n.includes("бумаг")){
+return "📄";
+}
+
+if(n.includes("стек")){
+return "🍾";
+}
+
+if(
+n.includes("опас") ||
+n.includes("hazard")
+){
+return "☢️";
+}
+
+if(n.includes("металл")){
+return "🥫";
+}
+
+return "❓";
+
+}
+
+
+/*
+Простая статистика
+*/
+
+let reports =
+localStorage.getItem(
+"ecosort_reports"
+)||0;
+
+let points =
+localStorage.getItem(
+"ecosort_points"
+)||0;
+
+
+document.getElementById(
+"reports"
+).innerText=reports;
+
+
+document.getElementById(
+"points"
+).innerText=points;
+
+</script>
+
+</body>
+</html>
